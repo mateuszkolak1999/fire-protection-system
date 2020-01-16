@@ -1,0 +1,66 @@
+#define BLYNK_PRINT Serial
+#include <ESP8266WiFi.h>
+#include <BlynkSimpleEsp8266.h>
+BlynkTimer timer;
+
+//Kod autoryzujący aplikacje
+char auth[] = "";   //e-mail auth
+
+//Nazwa WiFi i hasło
+char ssid[] = "";   //wifi name
+char pass[] = "";   //password wifi
+
+//metoda obsługująca detegtor ognia
+void notifyOnFire()
+{
+  int isButtonPressed = digitalRead(D0);
+  if (isButtonPressed==0) {
+    Serial.println("Ogien jest w domu!");
+    Blynk.notify("System przeciwpozarowy: Ogien jest w domu!");
+  }
+}
+
+//metoda obsługująca czujnik temperatury
+void measurementTemperature()
+{
+  float vref = 2.4;
+  float resolution = vref / 1023.0;
+
+  float temperature = analogRead(A0);
+  temperature = (temperature * resolution);
+  temperature = temperature * 100.0;
+  Serial.print("LM35 temperature: ");
+  Serial.println(temperature);
+  Blynk.virtualWrite(V0, temperature);
+
+  if (temperature >35)
+  {
+    Serial.println("Wysoka temperatura!");
+    Blynk.notify("System przeciwpozarowy: Wysoka temperatura!");
+  }
+}
+
+//metoda obsługująca czujnik czadu
+void gasSensor()
+{
+  int isGasSensor = digitalRead(D1);
+  if (isGasSensor==0) {
+    Serial.println("Czad jest w domu!");
+    Blynk.notify("System przeciwpozarowy: Czad jest w domu!");
+  }
+}
+
+void setup()
+{
+  Serial.begin(1152000);
+  Blynk.begin(auth, ssid, pass);
+  timer.setInterval(1000L,notifyOnFire); 
+  timer.setInterval(1000L,measurementTemperature); 
+  timer.setInterval(1000L,gasSensor); 
+}
+
+void loop()
+{
+  Blynk.run();
+  timer.run();
+}
